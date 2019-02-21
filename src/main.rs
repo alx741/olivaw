@@ -1,20 +1,35 @@
+#![deny(unsafe_code)]
+#![deny(warnings)]
 #![no_std]
 #![no_main]
 
-// pick a panicking behavior
-extern crate panic_halt; // you can put a breakpoint on `rust_begin_unwind` to catch panics
-// extern crate panic_abort; // requires nightly
-// extern crate panic_itm; // logs messages over ITM; requires ITM support
-// extern crate panic_semihosting; // logs messages to the host stderr; requires a debugger
+extern crate cortex_m_rt as rt;
+extern crate panic_semihosting;
+extern crate stm32f1xx_hal as hal;
 
-use cortex_m::asm;
-use cortex_m_rt::entry;
+use hal::prelude::*;
+use hal::stm32;
+use rt::{entry, exception, ExceptionFrame};
 
 #[entry]
 fn main() -> ! {
-    asm::nop(); // To not have main optimize to abort in release mode, remove when you add code
+    let p = stm32::Peripherals::take().unwrap();
 
-    loop {
-        // your code goes here
-    }
+    let mut rcc = p.RCC.constrain();
+    let mut gpioc = p.GPIOC.split(&mut rcc.apb2);
+
+    // #[cfg(feature = "stm32f103")]
+    gpioc.pc13.into_push_pull_output(&mut gpioc.crh).set_low();
+
+    loop {}
+}
+
+#[exception]
+fn HardFault(ef: &ExceptionFrame) -> ! {
+    panic!("{:#?}", ef);
+}
+
+#[exception]
+fn DefaultHandler(irqn: i16) {
+    panic!("Unhandled exception (IRQn = {})", irqn);
 }
