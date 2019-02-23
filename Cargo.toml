@@ -16,6 +16,9 @@ panic-semihosting = "0.5.1"
 version = "0.2.0"
 features = ["stm32f103", "rt"]
 
+[dependencies.mpu9250]
+version = "0.7.4"
+
 # Uncomment for the panic example.
 # panic-itm = "0.4.0"
 
