@@ -55,5 +55,21 @@ impl Motors {
     }
 }
 
-pub fn set(motors: Motors) {
+pub fn set(motors: &mut Motors) {
+    let front_right_duty = percentage2duty(motors.max_speed_duty, &motors.front_right);
+    let front_left_duty  = percentage2duty(motors.max_speed_duty, &motors.front_left);
+    let back_right_duty  = percentage2duty(motors.max_speed_duty, &motors.back_right);
+    let back_left_duty   = percentage2duty(motors.max_speed_duty, &motors.back_left);
+
+    motors.front_right_pwm_ch.set_duty(front_right_duty);
+    motors.front_left_pwm_ch.set_duty(front_left_duty);
+    motors.back_right_pwm_ch.set_duty(back_right_duty);
+    motors.back_left_pwm_ch.set_duty(back_left_duty);
+}
+
+fn percentage2duty(max_duty: u16, percentage: &Percentage) -> u16 {
+    let duty = (percentage.value() * (max_duty as f32)) / 100.0;
+    // hprintln!("max duty {:#?}", max_duty);
+    // hprintln!("percentage {:#?} to duty {:#?}", percentage, duty as u16);
+    duty as u16
 }
