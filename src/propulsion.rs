@@ -1,9 +1,7 @@
 use cortex_m_semihosting::hprintln;
 use crate::percentage::Percentage;
-use hal::gpio::{gpiob, Alternate, PushPull};
 use hal::prelude::*;
 use hal::pwm;
-use hal::rcc;
 use hal::stm32;
 use stm32::TIM4;
 
@@ -35,6 +33,11 @@ impl Motors {
         ch2.set_duty(0);
         ch3.set_duty(0);
         ch4.set_duty(0);
+
+        ch1.enable();
+        ch2.enable();
+        ch3.enable();
+        ch4.enable();
 
         let ch1_max_duty = ch1.get_max_duty();
 
