@@ -1,5 +1,4 @@
 #![deny(unsafe_code)]
-// #![deny(warnings)]
 #![no_main]
 #![no_std]
 
@@ -13,18 +12,17 @@ pub mod propulsion;
 
 // use cortex_m::asm;
 // use cortex_m_semihosting::hprintln;
+use nb::block;
 use hal::prelude::*;
 use hal::stm32;
+use stm32f1xx_hal::{timer::Timer};
 use percentage::Percentage;
 use propulsion::Motors;
 use rt::{entry, exception, ExceptionFrame};
 
 #[entry]
 fn main() -> ! {
-    // let mut motors = Motors::new();
-    // motors.front_right = Percentage::new(50.5);
-    // hprintln!("motors: {:#?}", motors).unwrap();
-
+    let pc = cortex_m::Peripherals::take().unwrap();
     let p = stm32::Peripherals::take().unwrap();
 
     let mut flash = p.FLASH.constrain();
@@ -54,33 +52,33 @@ fn main() -> ! {
         clocks,
         &mut rcc.apb1,
     );
-    // .0;
 
-    let mut motors = Motors::new(tim4_pwm_channels);
+    let mut motors = Motors::initialize(tim4_pwm_channels);
 
+    let mut timer = Timer::syst(pc.SYST, 1.hz(), clocks);
 
-    // // let max = pwm.get_max_duty();
+    // asm::bkpt();
+    loop {
+        block!(timer.wait()).unwrap();
+        motors.front_right = Percentage::new(10.0);
+        propulsion::set(&mut motors);
 
-    // // // hprintln!("max duty: {}", max).unwrap();
-    // _pwm_ch1.enable();
-    // // // asm::bkpt();
+        block!(timer.wait()).unwrap();
+        motors.front_left = Percentage::new(20.0);
+        propulsion::set(&mut motors);
 
-    // // full
-    // // _pwm_ch1.set_duty(500.hz());
-    // // pwm.set_duty((max*10)/100);
-    // // asm::bkpt();
+        block!(timer.wait()).unwrap();
+        motors.back_right = Percentage::new(30.0);
+        propulsion::set(&mut motors);
 
-    // // // dim
-    // // // pwm.set_duty(4266);
-    // // pwm.set_duty((max*5)/100);
-    // // asm::bkpt();
+        block!(timer.wait()).unwrap();
+        motors.back_left = Percentage::new(5.5);
+        propulsion::set(&mut motors);
 
-    // // // zero
-    // // // pwm.set_duty(2666);
-    // // pwm.set_duty((max*8)/100);
-    // // asm::bkpt();
-
-    loop {}
+        block!(timer.wait()).unwrap();
+        motors.front_right = Percentage::new(15.5);
+        propulsion::set(&mut motors);
+    }
 }
 
 #[exception]
