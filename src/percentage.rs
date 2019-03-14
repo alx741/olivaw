@@ -11,4 +11,8 @@ impl Percentage {
             panic!("Percentage value outside [0, 100] range");
         }
     }
+
+    pub fn value(&self) -> f32 {
+        self.percent
+    }
 }
