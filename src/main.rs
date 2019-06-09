@@ -51,39 +51,46 @@ fn main() -> ! {
     );
 
     let mut motors = Motors::initialize(tim4_pwm_channels);
-
     let mut timer = Timer::syst(pc.SYST, 1.hz(), clocks);
+
+    led.set_low();
+    motors.front_right = Percentage::new(0.0);
+    motors.back_left = Percentage::new(0.0);
+    propulsion::set(&mut motors);
+    block!(timer.wait()).unwrap();
+    block!(timer.wait()).unwrap();
+    block!(timer.wait()).unwrap();
+    block!(timer.wait()).unwrap();
+    block!(timer.wait()).unwrap();
+    led.set_high();
 
     // asm::bkpt();
     let mut throttle = 0.0;
     loop {
-        hprintln!("throttle: {}", throttle);
-        block!(timer.wait()).unwrap();
         motors.front_right = Percentage::new(throttle);
         motors.back_left = Percentage::new(throttle);
         propulsion::set(&mut motors);
+        block!(timer.wait()).unwrap();
 
-        if throttle == 110.0 {
+        if throttle == 100.0 {
             throttle = 0.0;
         } else {
-            throttle += 10.0;
+            throttle += 20.0;
         }
     }
 }
 
 #[panic_handler]
-fn panic(panic_info: &PanicInfo) -> ! {
-    loop {} // halt
+fn panic(_panic_info: &PanicInfo) -> ! {
+    loop {}
 }
 
-// #[exception]
-// fn HardFault(ef: &ExceptionFrame) -> ! {
-//     // panic!("{:#?}", ef);
-//     loop {}
-// }
+#[exception]
+fn HardFault(_ef: &ExceptionFrame) -> ! {
+    loop {}
+}
 
-// #[exception]
-// fn DefaultHandler(irqn: i16) {
-//     // panic!("Unhandled exception (IRQn = {})", irqn);
-//     loop {}
-// }
+#[exception]
+fn DefaultHandler(_irqn: i16) {
+    loop {}
+}
