@@ -1,6 +1,4 @@
 use crate::percentage::Percentage;
-// use cortex_m_semihosting::hprintln;
-use ufmt::{derive::uDebug, uDebug, Formatter, uwrite};
 use hal::prelude::*;
 use hal::pwm;
 use hal::stm32;
@@ -69,10 +67,6 @@ pub fn set(motors: &mut Motors) {
 }
 
 fn percentage2duty(max_duty: u16, percentage: &Percentage) -> u16 {
-    let duty = (percentage.value() * (max_duty as f32)) / 100.0;
-    // let mut s = String::new();
-    // uwrite!(&mut W, "max duty {:#?}", max_duty).unwrap();
-    // hprintln!("max duty {:#?}", max_duty);
-    // hprintln!("percentage {:#?} to duty {:#?}", percentage, duty as u16);
+    let duty = ((percentage.value() / 100.0) * (max_duty as f32)) / 10.0;
     duty as u16
 }
