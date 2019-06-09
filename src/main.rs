@@ -1,17 +1,20 @@
+#![feature(proc_macro_hygiene)]
 #![deny(unsafe_code)]
 #![no_main]
 #![no_std]
 
 extern crate cortex_m;
 extern crate cortex_m_rt as rt;
-extern crate panic_semihosting;
+// extern crate panic_semihosting;
+// extern crate panic_halt;
 extern crate stm32f1xx_hal as hal;
 
 pub mod percentage;
 pub mod propulsion;
 
 // use cortex_m::asm;
-// use cortex_m_semihosting::hprintln;
+use core::panic::PanicInfo;
+use cortex_m_semihosting::hprintln;
 use hal::prelude::*;
 use hal::stm32;
 use nb::block;
@@ -54,12 +57,13 @@ fn main() -> ! {
     // asm::bkpt();
     let mut throttle = 0.0;
     loop {
+        hprintln!("throttle: {}", throttle);
         block!(timer.wait()).unwrap();
         motors.front_right = Percentage::new(throttle);
         motors.back_left = Percentage::new(throttle);
         propulsion::set(&mut motors);
 
-        if throttle == 100.0 {
+        if throttle == 110.0 {
             throttle = 0.0;
         } else {
             throttle += 10.0;
@@ -67,14 +71,19 @@ fn main() -> ! {
     }
 }
 
-#[exception]
-fn HardFault(ef: &ExceptionFrame) -> ! {
-    // panic!("{:#?}", ef);
-    loop {}
+#[panic_handler]
+fn panic(panic_info: &PanicInfo) -> ! {
+    loop {} // halt
 }
 
-#[exception]
-fn DefaultHandler(irqn: i16) {
-    // panic!("Unhandled exception (IRQn = {})", irqn);
-    loop {}
-}
+// #[exception]
+// fn HardFault(ef: &ExceptionFrame) -> ! {
+//     // panic!("{:#?}", ef);
+//     loop {}
+// }
+
+// #[exception]
+// fn DefaultHandler(irqn: i16) {
+//     // panic!("Unhandled exception (IRQn = {})", irqn);
+//     loop {}
+// }
