@@ -8,7 +8,8 @@ impl Percentage {
         if percent >= 0.0 && percent <= 100.0 {
             Percentage { percent }
         } else {
-            panic!("Percentage value outside [0, 100] range");
+            Percentage { percent: 0.0 }
+            // panic!("Percentage value outside [0, 100] range");
         }
     }
 

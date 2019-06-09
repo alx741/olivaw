@@ -12,13 +12,13 @@ pub mod propulsion;
 
 // use cortex_m::asm;
 // use cortex_m_semihosting::hprintln;
-use nb::block;
 use hal::prelude::*;
 use hal::stm32;
-use stm32f1xx_hal::{timer::Timer};
+use nb::block;
 use percentage::Percentage;
 use propulsion::Motors;
 use rt::{entry, exception, ExceptionFrame};
+use stm32f1xx_hal::timer::Timer;
 
 #[entry]
 fn main() -> ! {
@@ -27,17 +27,11 @@ fn main() -> ! {
 
     let mut flash = p.FLASH.constrain();
     let mut rcc = p.RCC.constrain();
-
     let mut gpioc = p.GPIOC.split(&mut rcc.apb2);
-
     gpioc.pc13.into_push_pull_output(&mut gpioc.crh).set_low();
-
     let clocks = rcc.cfgr.freeze(&mut flash.acr);
-
     let mut afio = p.AFIO.constrain(&mut rcc.apb2);
-
     let mut gpiob = p.GPIOB.split(&mut rcc.apb2);
-
 
     // TIM4
     let pb6 = gpiob.pb6.into_alternate_push_pull(&mut gpiob.crl);
@@ -58,35 +52,29 @@ fn main() -> ! {
     let mut timer = Timer::syst(pc.SYST, 1.hz(), clocks);
 
     // asm::bkpt();
+    let mut throttle = 0.0;
     loop {
         block!(timer.wait()).unwrap();
-        motors.front_right = Percentage::new(10.0);
+        motors.front_right = Percentage::new(throttle);
+        motors.back_left = Percentage::new(throttle);
         propulsion::set(&mut motors);
 
-        block!(timer.wait()).unwrap();
-        motors.front_left = Percentage::new(20.0);
-        propulsion::set(&mut motors);
-
-        block!(timer.wait()).unwrap();
-        motors.back_right = Percentage::new(30.0);
-        propulsion::set(&mut motors);
-
-        block!(timer.wait()).unwrap();
-        motors.back_left = Percentage::new(5.5);
-        propulsion::set(&mut motors);
-
-        block!(timer.wait()).unwrap();
-        motors.front_right = Percentage::new(15.5);
-        propulsion::set(&mut motors);
+        if throttle == 100.0 {
+            throttle = 0.0;
+        } else {
+            throttle += 10.0;
+        }
     }
 }
 
 #[exception]
 fn HardFault(ef: &ExceptionFrame) -> ! {
-    panic!("{:#?}", ef);
+    // panic!("{:#?}", ef);
+    loop {}
 }
 
 #[exception]
 fn DefaultHandler(irqn: i16) {
-    panic!("Unhandled exception (IRQn = {})", irqn);
+    // panic!("Unhandled exception (IRQn = {})", irqn);
+    loop {}
 }

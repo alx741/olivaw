@@ -1,5 +1,5 @@
-use cortex_m_semihosting::hprintln;
 use crate::percentage::Percentage;
+use cortex_m_semihosting::hprintln;
 use hal::prelude::*;
 use hal::pwm;
 use hal::stm32;
@@ -16,7 +16,7 @@ pub struct Motors {
     back_right_pwm_ch: pwm::Pwm<TIM4, pwm::C3>,
     back_left_pwm_ch: pwm::Pwm<TIM4, pwm::C4>,
 
-    max_speed_duty: u16
+    max_speed_duty: u16,
 }
 
 // FIXME: Use stm32f1xx_hal::pwm::Pins::Channels associated type instead of this
@@ -50,16 +50,16 @@ impl Motors {
             front_left_pwm_ch: ch2,
             back_right_pwm_ch: ch3,
             back_left_pwm_ch: ch4,
-            max_speed_duty: ch1_max_duty
+            max_speed_duty: ch1_max_duty,
         }
     }
 }
 
 pub fn set(motors: &mut Motors) {
     let front_right_duty = percentage2duty(motors.max_speed_duty, &motors.front_right);
-    let front_left_duty  = percentage2duty(motors.max_speed_duty, &motors.front_left);
-    let back_right_duty  = percentage2duty(motors.max_speed_duty, &motors.back_right);
-    let back_left_duty   = percentage2duty(motors.max_speed_duty, &motors.back_left);
+    let front_left_duty = percentage2duty(motors.max_speed_duty, &motors.front_left);
+    let back_right_duty = percentage2duty(motors.max_speed_duty, &motors.back_right);
+    let back_left_duty = percentage2duty(motors.max_speed_duty, &motors.back_left);
 
     motors.front_right_pwm_ch.set_duty(front_right_duty);
     motors.front_left_pwm_ch.set_duty(front_left_duty);
