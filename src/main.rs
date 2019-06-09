@@ -5,8 +5,6 @@
 
 extern crate cortex_m;
 extern crate cortex_m_rt as rt;
-// extern crate panic_semihosting;
-// extern crate panic_halt;
 extern crate stm32f1xx_hal as hal;
 
 pub mod percentage;
@@ -14,7 +12,6 @@ pub mod propulsion;
 
 // use cortex_m::asm;
 use core::panic::PanicInfo;
-use cortex_m_semihosting::hprintln;
 use hal::prelude::*;
 use hal::stm32;
 use nb::block;
@@ -31,7 +28,7 @@ fn main() -> ! {
     let mut flash = p.FLASH.constrain();
     let mut rcc = p.RCC.constrain();
     let mut gpioc = p.GPIOC.split(&mut rcc.apb2);
-    gpioc.pc13.into_push_pull_output(&mut gpioc.crh).set_low();
+    let mut led = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
     let clocks = rcc.cfgr.freeze(&mut flash.acr);
     let mut afio = p.AFIO.constrain(&mut rcc.apb2);
     let mut gpiob = p.GPIOB.split(&mut rcc.apb2);
