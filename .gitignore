@@ -1,7 +1,9 @@
+**/*.rs.bk
+.#*
 .gdb_history
+Cargo.lock
+target/
+
 design/*.dxf~
 artwork/font_list
 
-*.bin
-*.elf
-*.o
