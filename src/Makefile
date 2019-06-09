@@ -13,10 +13,10 @@ $(BINARY).bin: $(BINARY).elf
 	arm-none-eabi-objcopy -O binary $^ $@
 
 $(BINARY).elf: $(OBJECTS)
-	arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -nostartfiles -Wl,--gc-sections,-static -L$(STM32F1LIB_DIR) -L$(STM32F1LIB_LINKER_DIR) -T$(STM32F1LIB_LINKER_DIR)/$(LINKER_SCRIPT) $^ -lstm32f1 -lm -lc -lrdimon --specs=rdimon.specs -o $@
+	arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -nostartfiles -Wl,--gc-sections,-static -L$(STM32F1LIB_DIR) -L$(STM32F1LIB_LINKER_DIR) -T$(STM32F1LIB_LINKER_DIR)/$(LINKER_SCRIPT) $^ -lstm32f1 -ggdb -lm -lc -lrdimon --specs=rdimon.specs -o $@
 
 %.o: %.c
-	arm-none-eabi-gcc $(DEBUG) -mcpu=cortex-m3 -mthumb -std=gnu11 -c -I$(STM32F1LIB_INCLUDE_DIR) $^ -o $@
+	arm-none-eabi-gcc $(DEBUG) -mcpu=cortex-m3 -mthumb -std=gnu11 -ggdb -lc -lrdimon --specs=rdimon.specs -O0 -c -I$(STM32F1LIB_INCLUDE_DIR) $^ -o $@
 
 interface:
 	picocom --imap lfcrlf -b 9600 -c /dev/ttyUSB0
