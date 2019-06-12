@@ -14,6 +14,7 @@ pub mod propulsion;
 use core::panic::PanicInfo;
 use hal::prelude::*;
 use hal::stm32;
+use hal::serial::Serial;
 use nb::block;
 use percentage::Percentage;
 use propulsion::Motors;
@@ -27,11 +28,12 @@ fn main() -> ! {
 
     let mut flash = p.FLASH.constrain();
     let mut rcc = p.RCC.constrain();
-    let mut gpioc = p.GPIOC.split(&mut rcc.apb2);
-    let mut led = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
     let clocks = rcc.cfgr.freeze(&mut flash.acr);
     let mut afio = p.AFIO.constrain(&mut rcc.apb2);
+    let mut gpioa = p.GPIOA.split(&mut rcc.apb2);
     let mut gpiob = p.GPIOB.split(&mut rcc.apb2);
+    let mut gpioc = p.GPIOC.split(&mut rcc.apb2);
+    let mut led = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
 
     // TIM4
     let pb6 = gpiob.pb6.into_alternate_push_pull(&mut gpiob.crl);
@@ -45,6 +47,19 @@ fn main() -> ! {
         50.hz(),
         clocks,
         &mut rcc.apb1,
+    );
+
+    // USART1
+    let pin_tx = gpioa.pa9.into_alternate_push_pull(&mut gpioa.crh);
+    let pin_rx = gpioa.pa10;
+
+    let serial = Serial::usart1(
+        p.USART1,
+        (pin_tx, pin_rx),
+        &mut afio.mapr,
+        9_600.bps(),
+        clocks,
+        &mut rcc.apb2,
     );
 
     let mut motors = Motors::initialize(tim4_pwm_channels);

@@ -67,6 +67,6 @@ pub fn set(motors: &mut Motors) {
 }
 
 fn percentage2duty(max_duty: u16, percentage: &Percentage) -> u16 {
-    let duty = ((percentage.value() / 100.0) * (max_duty as f32));
+    let duty = (percentage.value() / 100.0) * (max_duty as f32);
     duty as u16
 }
