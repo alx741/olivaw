@@ -5,16 +5,17 @@ use hal::stm32;
 use stm32::TIM4;
 
 pub struct Motors {
-    pub front_right: Percentage,
-    pub front_left: Percentage,
-    pub back_right: Percentage,
-    pub back_left: Percentage,
+    front_right: Percentage,
+    front_left: Percentage,
+    back_right: Percentage,
+    back_left: Percentage,
 
     front_right_pwm_ch: pwm::Pwm<TIM4, pwm::C1>,
     front_left_pwm_ch: pwm::Pwm<TIM4, pwm::C2>,
     back_right_pwm_ch: pwm::Pwm<TIM4, pwm::C3>,
     back_left_pwm_ch: pwm::Pwm<TIM4, pwm::C4>,
 
+    min_speed_duty: u16,
     max_speed_duty: u16,
 }
 
@@ -38,7 +39,8 @@ impl Motors {
         ch3.enable();
         ch4.enable();
 
-        let ch1_max_duty = ch1.get_max_duty();
+        let duty_1_ms = ch1.get_max_duty() / 20; // max duty = 20ms (50hz)
+        let duty_1_ms_10_percent = (duty_1_ms * 10) / 100;
 
         Motors {
             front_right: Percentage::new(0.0),
@@ -49,24 +51,26 @@ impl Motors {
             front_left_pwm_ch: ch2,
             back_right_pwm_ch: ch3,
             back_left_pwm_ch: ch4,
-            max_speed_duty: ch1_max_duty,
+
+            // Duty cicles with a 10% margin on the limits
+            min_speed_duty: duty_1_ms - duty_1_ms_10_percent,
+            max_speed_duty: (2 * duty_1_ms) + duty_1_ms_10_percent,
         }
     }
-}
 
-pub fn set(motors: &mut Motors) {
-    let front_right_duty = percentage2duty(motors.max_speed_duty, &motors.front_right);
-    let front_left_duty = percentage2duty(motors.max_speed_duty, &motors.front_left);
-    let back_right_duty = percentage2duty(motors.max_speed_duty, &motors.back_right);
-    let back_left_duty = percentage2duty(motors.max_speed_duty, &motors.back_left);
+    pub fn front_right(&mut self, percentage: Percentage) {
+        self.front_right = percentage;
+        let percent_duty = self.compute_duty_cicle(percentage);
+        self.front_right_pwm_ch.set_duty(percent_duty);
+    }
 
-    motors.front_right_pwm_ch.set_duty(front_right_duty);
-    motors.front_left_pwm_ch.set_duty(front_left_duty);
-    motors.back_right_pwm_ch.set_duty(back_right_duty);
-    motors.back_left_pwm_ch.set_duty(back_left_duty);
-}
+    pub fn get_front_right(&self) -> Percentage  {
+        self.front_right
+    }
 
-fn percentage2duty(max_duty: u16, percentage: &Percentage) -> u16 {
-    let duty = (percentage.value() / 100.0) * (max_duty as f32);
-    duty as u16
+    fn compute_duty_cicle(&self, percentage: Percentage) -> u16 {
+        let duty_delta = self.max_speed_duty - self.min_speed_duty;
+        let duty = ((percentage.value() / 100.0) * duty_delta as f32) + self.min_speed_duty as f32;
+        duty as u16
+    }
 }
