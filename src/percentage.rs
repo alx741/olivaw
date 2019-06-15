@@ -5,13 +5,19 @@ pub struct Percentage {
 
 impl Percentage {
     pub fn new(percent: f32) -> Percentage {
+        let mut p = Percentage { percent: 0.0 };
+        p.set(percent);
+        p
+    }
+
+    pub fn set(&mut self, percent: f32) {
         if percent < 0.0 {
-            Percentage { percent: 0.0 }
+            self.percent = 0.0;
         }
         else if percent > 100.0 {
-            Percentage { percent: 100.0 }
+            self.percent = 100.0;
         } else {
-            Percentage { percent }
+            self.percent = percent;
         }
     }
 
