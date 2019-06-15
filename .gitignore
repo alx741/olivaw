@@ -7,3 +7,4 @@ target/
 design/*.dxf~
 artwork/font_list
 
+*.bin
