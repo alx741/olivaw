@@ -18,10 +18,10 @@ use hal::serial::Serial;
 use hal::stm32;
 use nb::block;
 use percentage::Percentage;
-use propulsion::Motors;
+use propulsion::{Motor, Motors};
 use rt::{entry, exception, ExceptionFrame};
 use stm32f1xx_hal::stm32::USART1;
-use stm32f1xx_hal::timer::Timer;
+// use stm32f1xx_hal::timer::Timer;
 use ufmt::{uWrite, uwriteln};
 
 struct TxUWriter {
@@ -42,7 +42,7 @@ impl uWrite for TxUWriter {
 
 #[entry]
 fn main() -> ! {
-    let pc = cortex_m::Peripherals::take().unwrap();
+    // let pc = cortex_m::Peripherals::take().unwrap();
     let p = stm32::Peripherals::take().unwrap();
 
     let mut flash = p.FLASH.constrain();
@@ -51,8 +51,8 @@ fn main() -> ! {
     let mut afio = p.AFIO.constrain(&mut rcc.apb2);
     let mut gpioa = p.GPIOA.split(&mut rcc.apb2);
     let mut gpiob = p.GPIOB.split(&mut rcc.apb2);
-    let mut gpioc = p.GPIOC.split(&mut rcc.apb2);
-    let mut led = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
+    // let mut gpioc = p.GPIOC.split(&mut rcc.apb2);
+    // let mut led = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
 
     // TIM4
     let pb6 = gpiob.pb6.into_alternate_push_pull(&mut gpiob.crl);
@@ -84,34 +84,22 @@ fn main() -> ! {
     let (tx, mut rx) = serial.split();
 
     let mut motors = Motors::initialize(tim4_pwm_channels);
-    let mut timer = Timer::syst(pc.SYST, 3.hz(), clocks);
+    // let mut timer = Timer::syst(pc.SYST, 3.hz(), clocks);
 
     // asm::bkpt();
-    let mut throttle = 0.0;
     let mut tx_uwriter = TxUWriter { tx: tx };
     loop {
-        led.set_low();
+        // led.set_low();
         let received = block!(rx.read()).unwrap();
-        led.set_high();
+        // led.set_high();
 
         match received as char {
-            'j' => {
-                if throttle > 0.0 {
-                    throttle -= 5.0;
-                }
-            }
-
-            'k' => {
-                if throttle < 100.0 {
-                    throttle += 5.0;
-                }
-            }
-
+            'j' => motors.decrease_motor_throttle(&Motor::FrontRight, Percentage::new(5.0)),
+            'k' => motors.increase_motor_throttle(&Motor::FrontRight, Percentage::new(5.0)),
             _ => (),
         }
 
-        motors.front_right(Percentage::new(throttle));
-        uwriteln!(&mut tx_uwriter, "Throttle {}", motors.get_front_right().value() as u8).ok();
+        uwriteln!(&mut tx_uwriter, "Throttle {}", motors.get_motor_throttle(&Motor::FrontRight).value() as u8).ok();
     }
 }
 

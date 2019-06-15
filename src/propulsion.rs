@@ -4,11 +4,20 @@ use hal::pwm;
 use hal::stm32;
 use stm32::TIM4;
 
+pub type Throttle = Percentage;
+
+pub enum Motor {
+    FrontRight,
+    FrontLeft,
+    BackRight,
+    BackLeft,
+}
+
 pub struct Motors {
-    front_right: Percentage,
-    front_left: Percentage,
-    back_right: Percentage,
-    back_left: Percentage,
+    front_right: Throttle,
+    front_left: Throttle,
+    back_right: Throttle,
+    back_left: Throttle,
 
     front_right_pwm_ch: pwm::Pwm<TIM4, pwm::C1>,
     front_left_pwm_ch: pwm::Pwm<TIM4, pwm::C2>,
@@ -43,10 +52,10 @@ impl Motors {
         let duty_1_ms_10_percent = (duty_1_ms * 10) / 100;
 
         Motors {
-            front_right: Percentage::new(0.0),
-            front_left: Percentage::new(0.0),
-            back_right: Percentage::new(0.0),
-            back_left: Percentage::new(0.0),
+            front_right: Throttle::new(0.0),
+            front_left: Throttle::new(0.0),
+            back_right: Throttle::new(0.0),
+            back_left: Throttle::new(0.0),
             front_right_pwm_ch: ch1,
             front_left_pwm_ch: ch2,
             back_right_pwm_ch: ch3,
@@ -58,19 +67,54 @@ impl Motors {
         }
     }
 
-    pub fn front_right(&mut self, percentage: Percentage) {
-        self.front_right = percentage;
-        let percent_duty = self.compute_duty_cicle(percentage);
-        self.front_right_pwm_ch.set_duty(percent_duty);
+    pub fn get_motor_throttle(&self, motor: &Motor) -> Throttle {
+        match motor {
+            Motor::FrontRight => self.front_right,
+            Motor::FrontLeft => self.front_left,
+            Motor::BackRight => self.back_right,
+            Motor::BackLeft => self.back_left,
+        }
     }
 
-    pub fn get_front_right(&self) -> Percentage  {
-        self.front_right
+    pub fn set_motor_throttle(&mut self, motor: &Motor, throttle: Throttle) {
+        let throttle_duty_cicle = self.compute_duty_cicle(throttle);
+
+        match motor {
+            Motor::FrontRight => {
+                self.front_right = throttle;
+                self.front_right_pwm_ch.set_duty(throttle_duty_cicle);
+            }
+
+            Motor::FrontLeft => {
+                self.front_left = throttle;
+                self.front_left_pwm_ch.set_duty(throttle_duty_cicle);
+            }
+
+            Motor::BackRight => {
+                self.back_right = throttle;
+                self.back_right_pwm_ch.set_duty(throttle_duty_cicle);
+            }
+
+            Motor::BackLeft => {
+                self.back_left = throttle;
+                self.back_left_pwm_ch.set_duty(throttle_duty_cicle);
+            }
+        }
     }
 
-    fn compute_duty_cicle(&self, percentage: Percentage) -> u16 {
+    pub fn increase_motor_throttle(&mut self, motor: &Motor, percentage: Percentage) {
+        let current_throttle = self.get_motor_throttle(motor);
+        self.set_motor_throttle(motor, current_throttle + percentage);
+    }
+
+    pub fn decrease_motor_throttle(&mut self, motor: &Motor, percentage: Percentage) {
+        let current_throttle = self.get_motor_throttle(motor);
+        self.set_motor_throttle(motor, current_throttle - percentage);
+    }
+
+    fn compute_duty_cicle(&self, throttle: Throttle) -> u16 {
         let duty_delta = self.max_speed_duty - self.min_speed_duty;
-        let duty = ((percentage.value() / 100.0) * duty_delta as f32) + self.min_speed_duty as f32;
+        let duty = ((throttle.value() / 100.0) * duty_delta as f32) + self.min_speed_duty as f32;
         duty as u16
     }
 }
