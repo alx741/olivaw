@@ -6,6 +6,7 @@
 extern crate cortex_m;
 extern crate cortex_m_rt as rt;
 extern crate stm32f1xx_hal as hal;
+// extern crate void;
 
 pub mod percentage;
 pub mod propulsion;
@@ -14,12 +15,33 @@ pub mod propulsion;
 use core::panic::PanicInfo;
 use hal::prelude::*;
 use hal::stm32;
-use hal::serial::Serial;
+use hal::serial::{Serial};
 use nb::block;
+#[allow(unused_imports)]
+use ufmt::{uwriteln, uWrite};
+#[allow(unused_imports)]
 use percentage::Percentage;
 use propulsion::Motors;
 use rt::{entry, exception, ExceptionFrame};
 use stm32f1xx_hal::timer::Timer;
+use stm32f1xx_hal::stm32::USART1;
+// use void::Void;
+
+struct TxUWriter {
+    tx: hal::serial::Tx<USART1>,
+}
+
+impl uWrite for TxUWriter {
+    type Error = ();
+
+    fn write_str(&mut self, s: &str) -> Result<(), Self::Error> {
+        for c in s.chars() {
+            block!(self.tx.write(c as u8));
+            // block!(self.tx.write('R' as u8));
+        }
+        Ok(())
+    }
+}
 
 #[entry]
 fn main() -> ! {
@@ -62,8 +84,11 @@ fn main() -> ! {
         &mut rcc.apb2,
     );
 
+    // separate into tx and rx channels
+    let (mut tx, mut rx) = serial.split();
+
     let mut motors = Motors::initialize(tim4_pwm_channels);
-    let mut timer = Timer::syst(pc.SYST, 1.hz(), clocks);
+    let mut timer = Timer::syst(pc.SYST, 3.hz(), clocks);
 
     led.set_low();
     motors.front_right = Percentage::new(0.0);
@@ -78,7 +103,12 @@ fn main() -> ! {
 
     // asm::bkpt();
     let mut throttle = 0.0;
+    let mut txUWriter = TxUWriter { tx: tx};
     loop {
+        uwriteln!(&mut txUWriter, "test {}", 1);
+        let received = block!(rx.read()).unwrap();
+        block!(timer.wait()).unwrap();
+
         motors.front_right = Percentage::new(throttle);
         motors.back_left = Percentage::new(throttle);
         propulsion::set(&mut motors);
